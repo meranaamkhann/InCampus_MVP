@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Dark mode is the primary experience — campus-at-night, glowing ID card */
+  --bg: 226 28% 7%;              /* #0B0E14 */
+  --bg-surface: 226 24% 10%;      /* card surface base, glass applied on top */
+  --bg-elevated: 226 22% 13%;
+  --ink: 220 20% 96%;
+  --ink-muted: 220 12% 70%;
+  --ink-faint: 220 10% 45%;
+  --border: 220 15% 22%;
+
+  --primary: 226 100% 69%;        /* #5B8CFF electric blue - "verified" */
+  --primary-foreground: 226 30% 8%;
+  --accent: 38 100% 56%;          /* #FFB020 amber - energy/events */
+  --accent-foreground: 30 40% 10%;
+  --success: 158 64% 52%;         /* #34D399 mint */
+  --danger: 350 89% 71%;          /* #FB7185 */
+}
+
+.light {
+  --bg: 220 30% 97%;
+  --bg-surface: 0 0% 100%;
+  --bg-elevated: 0 0% 100%;
+  --ink: 222 30% 12%;
+  --ink-muted: 222 14% 40%;
+  --ink-faint: 222 10% 60%;
+  --border: 220 20% 88%;
+
+  --primary: 226 90% 56%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 32 95% 50%;
+  --accent-foreground: 0 0% 100%;
+  --success: 158 60% 40%;
+  --danger: 350 75% 55%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background: hsl(var(--bg));
+  color: hsl(var(--ink));
+  font-family: var(--font-body), sans-serif;
+}
+
+/* Glass surface — the signature material used across cards, nav, modals */
+.glass {
+  background: linear-gradient(180deg, hsl(var(--bg-surface) / 0.7), hsl(var(--bg-surface) / 0.5));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--border) / 0.6);
+}
+
+.light .glass {
+  background: linear-gradient(180deg, hsl(0 0% 100% / 0.85), hsl(0 0% 100% / 0.7));
+  box-shadow: 0 4px 24px rgba(20, 30, 60, 0.06);
+}
+
+::selection {
+  background: hsl(var(--primary) / 0.3);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
