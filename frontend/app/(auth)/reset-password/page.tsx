@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { api, apiErrorMessage } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -24,6 +25,7 @@ function ResetPasswordForm() {
     try {
       await api.post("/auth/reset-password", { email, otp, newPassword });
       router.push("/login");
+      toast.success("Password reset", "Log in with your new password.");
     } catch (err) {
       setError(apiErrorMessage(err, "Invalid or expired code"));
     } finally {

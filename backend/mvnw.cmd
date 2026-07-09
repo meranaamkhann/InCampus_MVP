@@ -18,20 +18,65 @@
 @REM ----------------------------------------------------------------------------
 
 @REM ----------------------------------------------------------------------------
-@REM Apache Maven Wrapper startup batch script, version 3.3.2
+@REM Apache Maven Wrapper startup batch script (classic form - no PowerShell
+@REM trickery, so it behaves identically from cmd.exe or PowerShell).
 @REM ----------------------------------------------------------------------------
 
-@IF "%__MVNW_ARG0_NAME__%"=="" (SET __MVNW_ARG0_NAME__=%~nx0)
-@SET __MVNW_CMD__=
-@SET __MVNW_ERROR__=
-@SET __MVNW_PSMODULEP_SAVE=%PSModulePath%
-@SET PSModulePath=
-@FOR /F "usebackq tokens=1* delims==" %%A IN (`powershell -noprofile "& {$out='%%COMSPEC%% /d /c mvnw.cmd'; if (Test-Path env:JAVA_HOME) {$out="""$env:JAVA_HOME\bin\java.exe"" -Dmaven.multiModuleProjectDirectory=%~dp0 -classpath ""%~dp0\.mvn\wrapper\maven-wrapper.jar"" org.apache.maven.wrapper.MavenWrapperMain"}; echo $out}"`) DO (
-  IF "%%A"=="MVN_CMD" (set __MVNW_CMD__=%%B) ELSE IF "%%B"=="" (echo %%A) ELSE (echo %%A=%%B)
+@echo off
+setlocal
+
+set ERROR_CODE=0
+
+set MAVEN_PROJECTBASEDIR=%~dp0
+if "%MAVEN_PROJECTBASEDIR:~-1%"=="\" set MAVEN_PROJECTBASEDIR=%MAVEN_PROJECTBASEDIR:~0,-1%
+
+set WRAPPER_JAR="%MAVEN_PROJECTBASEDIR%\.mvn\wrapper\maven-wrapper.jar"
+set WRAPPER_PROPERTIES="%MAVEN_PROJECTBASEDIR%\.mvn\wrapper\maven-wrapper.properties"
+set WRAPPER_LAUNCHER=org.apache.maven.wrapper.MavenWrapperMain
+
+if not "%JAVA_HOME%"=="" (
+  if exist "%JAVA_HOME%\bin\java.exe" (
+    set JAVACMD="%JAVA_HOME%\bin\java.exe"
+  )
 )
-@SET PSModulePath=%__MVNW_PSMODULEP_SAVE%
-@SET __MVNW_PSMODULEP_SAVE=
-@SET __MVNW_ARG0_NAME__=
-@SET MVNW_USERNAME=
-@SET MVNW_PASSWORD=
-IF NOT "%__MVNW_CMD__%"=="" (%__MVNW_CMD__% %*)
+if "%JAVACMD%"=="" (
+  set JAVACMD=java.exe
+)
+
+where %JAVACMD% >nul 2>nul
+if ERRORLEVEL 1 (
+  echo.
+  echo Error: JAVA_HOME is not set and no 'java' command could be found on your PATH.
+  echo Please set the JAVA_HOME environment variable to match the location of your Java installation.
+  echo.
+  set ERROR_CODE=1
+  goto end
+)
+
+if not exist %WRAPPER_JAR% (
+  echo Downloading Maven Wrapper jar...
+  set WRAPPER_URL=https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.3.2/maven-wrapper-3.3.2.jar
+  for /f "usebackq tokens=1,* delims==" %%A in (%WRAPPER_PROPERTIES%) do (
+    if "%%A"=="wrapperUrl" set WRAPPER_URL=%%B
+  )
+  powershell -NoProfile -Command "Invoke-WebRequest -Uri '%WRAPPER_URL%' -OutFile %WRAPPER_JAR%"
+  if ERRORLEVEL 1 (
+    echo.
+    echo Failed to download the Maven Wrapper jar from %WRAPPER_URL%
+    echo Download it manually and place it at %WRAPPER_JAR%
+    echo.
+    set ERROR_CODE=1
+    goto end
+  )
+)
+
+%JAVACMD% ^
+  %MAVEN_OPTS% ^
+  -Dmaven.multiModuleProjectDirectory="%MAVEN_PROJECTBASEDIR%" ^
+  -classpath %WRAPPER_JAR% ^
+  %WRAPPER_LAUNCHER% %*
+
+if ERRORLEVEL 1 set ERROR_CODE=1
+
+:end
+endlocal & exit /B %ERROR_CODE%

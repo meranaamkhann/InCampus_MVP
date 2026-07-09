@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public interface UserService {
 
-    UserProfileResponse getProfile(UUID userId);
+    UserProfileResponse getProfile(UUID userId, UUID viewerId);
 
     UserProfileResponse updateProfile(UUID userId, UpdateProfileRequest request);
 

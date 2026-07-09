@@ -5,7 +5,8 @@ import { CalendarDays, MapPin, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api";
+import { api, apiErrorMessage } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import type { EventDto } from "@/types";
 
 export function EventCard({ event }: { event: EventDto }) {
@@ -19,6 +20,9 @@ export function EventCard({ event }: { event: EventDto }) {
       await api.post(`/events/${event.id}/join`);
       if (status !== "JOINED") setJoinedCount((c) => c + 1);
       setStatus("JOINED");
+      toast.success("You're in!", `See you at "${event.title}".`);
+    } catch (err) {
+      toast.error("Couldn't join event", apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -29,6 +33,8 @@ export function EventCard({ event }: { event: EventDto }) {
     try {
       await api.post(`/events/${event.id}/interested`);
       setStatus("INTERESTED");
+    } catch (err) {
+      toast.error("Couldn't update", apiErrorMessage(err));
     } finally {
       setLoading(false);
     }

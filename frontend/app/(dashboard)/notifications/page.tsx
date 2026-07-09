@@ -4,9 +4,13 @@ import { Heart, MessageCircle, CalendarDays, UserPlus, Bell, CheckCheck } from "
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { ListSkeleton } from "@/components/ui/skeleton";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { usePaginated } from "@/hooks/usePaginated";
 import { api } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import { useNotificationStore } from "@/lib/notification-store";
 import type { NotificationDto } from "@/types";
 
@@ -24,29 +28,39 @@ const icons: Record<string, typeof Heart> = {
 };
 
 export default function NotificationsPage() {
-  const { items, setItems, loading, hasMore, sentinelRef } = usePaginated<NotificationDto>("/notifications");
+  const { items, setItems, loading, error, hasMore, sentinelRef, retry } = usePaginated<NotificationDto>("/notifications");
   const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
 
   async function markRead(id: string) {
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     setUnreadCount(Math.max(0, unreadCount - 1));
-    await api.post(`/notifications/${id}/read`);
+    try {
+      await api.post(`/notifications/${id}/read`);
+    } catch {
+      toast.error("Couldn't mark as read");
+    }
   }
 
   async function markAllRead() {
     setItems((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
-    await api.post("/notifications/read-all");
+    try {
+      await api.post("/notifications/read-all");
+    } catch {
+      toast.error("Couldn't mark all as read");
+    }
   }
 
   return (
     <div className="mx-auto max-w-2xl">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold">Notifications</h1>
-        <Button variant="ghost" size="sm" onClick={markAllRead}>
-          <CheckCheck size={15} className="mr-1" /> Mark all read
-        </Button>
+        {items.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={markAllRead}>
+            <CheckCheck size={15} className="mr-1" /> Mark all read
+          </Button>
+        )}
       </div>
 
       <div className="mt-6 space-y-2">
@@ -75,10 +89,14 @@ export default function NotificationsPage() {
         })}
       </div>
 
-      {loading && <p className="mt-6 text-center text-sm text-ink-muted">Loading…</p>}
-      {!loading && items.length === 0 && (
-        <div className="glass mt-6 rounded-2xl p-10 text-center text-ink-muted">You&apos;re all caught up.</div>
+      {loading && <ListSkeleton className="mt-6" />}
+
+      {error && items.length === 0 && !loading && <ErrorState className="mt-6" onRetry={retry} />}
+
+      {!loading && !error && items.length === 0 && (
+        <EmptyState icon={Bell} title="You're all caught up" description="New activity will show up here." className="mt-6" />
       )}
+
       {hasMore && <div ref={sentinelRef} className="h-4" />}
     </div>
   );

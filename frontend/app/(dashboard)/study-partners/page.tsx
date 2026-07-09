@@ -9,8 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { ListSkeleton } from "@/components/ui/skeleton";
 import { usePaginated } from "@/hooks/usePaginated";
 import { api, apiErrorMessage } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import type { StudyPartnerPostDto } from "@/types";
 
 function StudyPartnerCard({ post }: { post: StudyPartnerPostDto }) {
@@ -24,6 +28,9 @@ function StudyPartnerCard({ post }: { post: StudyPartnerPostDto }) {
       await api.post(`/study-partners/${post.id}/join`);
       setJoined(true);
       setCount((c) => c + 1);
+      toast.success("Request sent", `${post.author.name} will see your interest in "${post.subject}".`);
+    } catch (err) {
+      toast.error("Couldn't send request", apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -57,24 +64,27 @@ function StudyPartnerCard({ post }: { post: StudyPartnerPostDto }) {
 }
 
 export default function StudyPartnersPage() {
-  const { items, setItems, loading, hasMore, sentinelRef } = usePaginated<StudyPartnerPostDto>("/study-partners");
+  const { items, setItems, loading, error, hasMore, sentinelRef, retry } = usePaginated<StudyPartnerPostDto>("/study-partners");
   const [open, setOpen] = useState(false);
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleCreate() {
     setSubmitting(true);
-    setError(null);
+    setFormError(null);
     try {
       const res = await api.post<{ data: StudyPartnerPostDto }>("/study-partners", { subject, description });
       setItems((prev) => [res.data.data, ...prev]);
+      toast.success("Posted!", "Your study partner request is live.");
       setSubject("");
       setDescription("");
       setOpen(false);
     } catch (err) {
-      setError(apiErrorMessage(err, "Couldn't post"));
+      const message = apiErrorMessage(err, "Couldn't post");
+      setFormError(message);
+      toast.error("Couldn't post", message);
     } finally {
       setSubmitting(false);
     }
@@ -103,7 +113,7 @@ export default function StudyPartnersPage() {
                 <Label htmlFor="sp-desc">What are you working on?</Label>
                 <Textarea id="sp-desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
               </div>
-              {error && <p className="text-sm text-danger">{error}</p>}
+              {formError && <p className="text-sm text-danger">{formError}</p>}
               <Button className="w-full" onClick={handleCreate} disabled={submitting || !subject.trim()}>
                 {submitting ? "Posting…" : "Post"}
               </Button>
@@ -112,13 +122,27 @@ export default function StudyPartnersPage() {
         </Dialog>
       </div>
 
-      <div className="mt-6 space-y-4">
-        {items.map((p) => (
-          <StudyPartnerCard key={p.id} post={p} />
-        ))}
-      </div>
+      {loading && <ListSkeleton className="mt-6" />}
 
-      {loading && <p className="mt-6 text-center text-sm text-ink-muted">Loading…</p>}
+      {error && items.length === 0 && !loading && <ErrorState className="mt-6" onRetry={retry} />}
+
+      {!loading && !error && items.length === 0 && (
+        <EmptyState
+          icon={BookOpen}
+          title="No study partner posts yet"
+          description="Post what you're working on — DSA, GATE, ML — and find someone at your campus doing the same thing."
+          className="mt-6"
+        />
+      )}
+
+      {items.length > 0 && (
+        <div className="mt-6 space-y-4">
+          {items.map((p) => (
+            <StudyPartnerCard key={p.id} post={p} />
+          ))}
+        </div>
+      )}
+
       {hasMore && <div ref={sentinelRef} className="h-4" />}
     </div>
   );

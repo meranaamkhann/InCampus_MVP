@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, List, Map as MapIcon } from "lucide-react";
+import { Plus, List, Map as MapIcon, CalendarDays } from "lucide-react";
 import { EventCard } from "@/components/events/EventCard";
 import { EventsMap } from "@/components/events/EventsMap";
 import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
@@ -9,14 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { CardSkeletonGrid } from "@/components/ui/skeleton";
 import { usePaginated } from "@/hooks/usePaginated";
 import { api, apiErrorMessage } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import type { EventDto, EventCategory } from "@/types";
 
 const CATEGORIES: EventCategory[] = ["TECH", "CULTURAL", "SPORTS", "WORKSHOP", "HACKATHON", "SEMINAR", "OTHER"];
 
 export default function EventsPage() {
-  const { items, setItems, loading, hasMore, sentinelRef } = usePaginated<EventDto>("/events/upcoming");
+  const { items, setItems, loading, error, hasMore, sentinelRef, retry } = usePaginated<EventDto>("/events/upcoming");
   const [view, setView] = useState<"list" | "map">("list");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -30,7 +34,7 @@ export default function EventsPage() {
     maxParticipants: "",
     category: "TECH" as EventCategory,
   });
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   function update<K extends keyof typeof form>(field: K, value: (typeof form)[K]) {
@@ -39,7 +43,7 @@ export default function EventsPage() {
 
   async function handleCreate() {
     setSubmitting(true);
-    setError(null);
+    setFormError(null);
     try {
       const res = await api.post<{ data: EventDto }>("/events", {
         ...form,
@@ -48,9 +52,12 @@ export default function EventsPage() {
         longitude: form.longitude ? Number(form.longitude) : undefined,
       });
       setItems((prev) => [res.data.data, ...prev]);
+      toast.success("Event created", `"${form.title}" is now live on the events page.`);
       setOpen(false);
     } catch (err) {
-      setError(apiErrorMessage(err, "Couldn't create event"));
+      const message = apiErrorMessage(err, "Couldn't create event");
+      setFormError(message);
+      toast.error("Couldn't create event", message);
     } finally {
       setSubmitting(false);
     }
@@ -146,7 +153,7 @@ export default function EventsPage() {
                     </select>
                   </div>
                 </div>
-                {error && <p className="text-sm text-danger">{error}</p>}
+                {formError && <p className="text-sm text-danger">{formError}</p>}
                 <Button className="w-full" onClick={handleCreate} disabled={submitting || !form.title.trim() || !form.eventDate}>
                   {submitting ? "Creating…" : "Create event"}
                 </Button>
@@ -168,11 +175,17 @@ export default function EventsPage() {
         </div>
       )}
 
-      {loading && <p className="mt-6 text-center text-sm text-ink-muted">Loading…</p>}
-      {!loading && items.length === 0 && (
-        <div className="glass mt-6 rounded-2xl p-10 text-center text-ink-muted">
-          No upcoming events yet. Be the first to organize one.
-        </div>
+      {loading && view === "list" && <CardSkeletonGrid className="mt-6" />}
+
+      {error && items.length === 0 && !loading && <ErrorState className="mt-6" onRetry={retry} />}
+
+      {!loading && !error && items.length === 0 && (
+        <EmptyState
+          icon={CalendarDays}
+          title="No upcoming events yet"
+          description="Be the first to organize a workshop, hackathon, or meetup for your campus."
+          className="mt-6"
+        />
       )}
       {view === "list" && hasMore && <div ref={sentinelRef} className="h-4" />}
     </div>

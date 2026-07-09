@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { api, apiErrorMessage } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import { useAuthStore } from "@/lib/auth-store";
 import type { ApiResponse, UserProfile } from "@/types";
 
@@ -60,6 +61,7 @@ export default function EditProfilePage() {
         skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
       });
       router.push(`/profile/${userId}`);
+      toast.success("Profile updated");
     } catch (err) {
       setError(apiErrorMessage(err, "Couldn't save changes"));
     } finally {

@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import type { Post } from "@/types";
 
 const typeLabels: Record<string, string> = {
@@ -39,6 +40,7 @@ export function PostCard({ post }: { post: Post }) {
     } catch {
       setLiked(!next);
       setLikeCount((c) => c + (next ? -1 : 1));
+      toast.error("Couldn't update like");
     }
   }
 
@@ -50,6 +52,7 @@ export function PostCard({ post }: { post: Post }) {
       else await api.delete(`/posts/${post.id}/save`);
     } catch {
       setSaved(!next);
+      toast.error("Couldn't update save");
     }
   }
 

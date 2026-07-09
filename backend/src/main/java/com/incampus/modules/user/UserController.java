@@ -30,7 +30,7 @@ public class UserController {
 
     @GetMapping("/me")
     public ApiResponse<UserProfileResponse> getMyProfile(@AuthenticationPrincipal UserPrincipal principal) {
-        return ApiResponse.ok(userService.getProfile(principal.getId()));
+        return ApiResponse.ok(userService.getProfile(principal.getId(), principal.getId()));
     }
 
     @PutMapping("/me")
@@ -41,8 +41,10 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public ApiResponse<UserProfileResponse> getProfile(@PathVariable UUID userId) {
-        return ApiResponse.ok(userService.getProfile(userId));
+    public ApiResponse<UserProfileResponse> getProfile(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID userId) {
+        return ApiResponse.ok(userService.getProfile(userId, principal.getId()));
     }
 
     @PostMapping("/{userId}/follow")

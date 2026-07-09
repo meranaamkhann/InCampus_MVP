@@ -24,9 +24,9 @@ public class UserServiceImpl implements UserService {
     private final NotificationService notificationService;
 
     @Override
-    public UserProfileResponse getProfile(UUID userId) {
+    public UserProfileResponse getProfile(UUID userId, UUID viewerId) {
         User user = findUserOrThrow(userId);
-        return toProfileResponse(user);
+        return toProfileResponse(user, viewerId);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class UserServiceImpl implements UserService {
         if (request.getSkills() != null) user.setSkills(request.getSkills());
 
         userRepository.save(user);
-        return toProfileResponse(user);
+        return toProfileResponse(user, userId);
     }
 
     @Override
@@ -100,7 +100,10 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> ApiException.notFound("User not found"));
     }
 
-    private UserProfileResponse toProfileResponse(User user) {
+    private UserProfileResponse toProfileResponse(User user, UUID viewerId) {
+        boolean followed = viewerId != null && !viewerId.equals(user.getId())
+                && userFollowRepository.existsByFollowerIdAndFollowingId(viewerId, user.getId());
+
         return UserProfileResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
@@ -118,6 +121,7 @@ public class UserServiceImpl implements UserService {
                 .followersCount(userFollowRepository.countByFollowingId(user.getId()))
                 .followingCount(userFollowRepository.countByFollowerId(user.getId()))
                 .banned(user.isBanned())
+                .followedByCurrentUser(followed)
                 .build();
     }
 

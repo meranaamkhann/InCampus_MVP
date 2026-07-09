@@ -69,20 +69,60 @@ more were bumped to versions directly confirmed to exist:
 - `mapstruct` / `mapstruct-processor`: 1.6.0 → 1.6.3 (matches current official install docs)
 
 Also added the **Maven Wrapper** (`./mvnw`, `./mvnw.cmd`, `.mvn/wrapper/`),
-which was missing before — if you don't have Maven installed system-wide,
-`mvn spring-boot:run` would fail with a plain "command not found" that looks
-like a Maven problem but is really just "no Maven on this machine." `./mvnw`
-downloads the correct Maven version automatically on first run.
+which was missing before. The first version of `mvnw.cmd` I shipped had a
+broken PowerShell one-liner that spat out garbage on Windows — replaced
+with a plain, classic-style batch script that behaves the same from
+`cmd.exe` or PowerShell.
 
-**What I still can't do:** my sandbox has no route to Maven Central
-(`repo.maven.apache.org` returns `403 host_not_allowed` here), so I could
-not run `mvn clean compile` myself to give you a green checkmark. Every fix
-above is backed by a direct Maven Central lookup for that exact
-groupId:artifactId:version, not a guess — but you should still run
-`./mvnw clean compile` as the very first thing, before building anything
-further on top. The frontend, by contrast, *was* fully installed, built, and
-linted in my sandbox (npm's registry isn't blocked) — see
-`frontend/README.md` for what that verification covered.
+## UI/UX polish pass (this round)
+
+Focused on the specific gaps called out as "what still needs improvement":
+onboarding, email verification UX, loading/empty/error states, mobile
+responsiveness, and silent failures that gave zero user feedback.
+
+**Real bugs found and fixed, not just polish:**
+- Mobile had **no navigation at all** — the sidebar was `hidden md:flex`
+  with nothing replacing it below that breakpoint. Added a bottom tab bar
+  (`MobileNav`) plus a slide-in drawer (`MobileDrawer`) for the items that
+  don't fit in five tabs.
+- The Messages page **completely ignored the `?room=` query param** that
+  the profile page's "Message" button relies on — clicking it opened your
+  most recent chat instead of the person you actually clicked. Fixed, and
+  the page is now properly responsive (was a fixed 280px two-column grid
+  that broke on small screens).
+- The profile page's Follow button **always showed "Follow" even if you
+  already followed that person** — the backend never told the frontend the
+  actual follow state. Added `followedByCurrentUser` to the profile API
+  response (`UserService.getProfile` now takes a viewer id) to fix this at
+  the source rather than papering over it client-side.
+- Half a dozen action buttons (community join/leave, event join/interested,
+  friend accept/reject/send, post like/save) had **zero error handling** —
+  a failed request just silently did nothing, or in a few cases left the UI
+  in a wrong optimistic state with no way to know something went wrong.
+  All now roll back correctly and show a toast on failure.
+
+**New, reusable pieces added:**
+- A toast notification system (`components/ui/toaster.tsx` +
+  `lib/toast-store.ts`) — `@radix-ui/react-toast` was a dependency from day
+  one but was never actually wired up until now.
+- `EmptyState`, `ErrorState`, and `Skeleton`/`CardSkeletonGrid`/
+  `ListSkeleton` components, applied consistently across Feed, Events,
+  Communities, Study Partners, Projects, Friends, Notifications, and
+  Messages instead of each page rolling its own (or no) loading/empty text.
+- `OtpInput` — 6-box code entry with auto-advance, paste support, and
+  auto-submit on completion — plus a resend cooldown timer, replacing the
+  plain single text field.
+- Signup is now a 2-step wizard (Account → College) with a progress
+  indicator instead of one long form, with per-step validation.
+
+Everything above was verified the same way as before: `npm install`,
+`npm run build`, and `npm run lint` all pass clean in my sandbox (20/20
+routes). The backend changes (new `UserProfileResponse` field, changed
+`UserService.getProfile` signature) were checked against every call site by
+hand and via `grep` — but same caveat as always: my sandbox has no route to
+Maven Central (`repo.maven.apache.org` returns `403 host_not_allowed` here),
+so I still can't run `mvn compile` myself. Run `./mvnw clean compile` as
+the first thing after extracting this.
 
 ## MVP feature status
 

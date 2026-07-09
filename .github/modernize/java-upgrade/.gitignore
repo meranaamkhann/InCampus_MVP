@@ -1,0 +1,26 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Next.js
+.next/
+out/
+
+# Java / Maven
+target/
+**/target/
+
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

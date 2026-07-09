@@ -58,6 +58,7 @@ export interface UserProfile extends UserSummary {
   followersCount: number;
   followingCount: number;
   banned: boolean;
+  followedByCurrentUser: boolean;
 }
 
 export interface AuthResponse {

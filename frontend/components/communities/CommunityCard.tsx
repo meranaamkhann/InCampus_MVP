@@ -5,6 +5,7 @@ import { Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import type { CommunityDto } from "@/types";
 
 export function CommunityCard({ community }: { community: CommunityDto }) {
@@ -20,6 +21,8 @@ export function CommunityCard({ community }: { community: CommunityDto }) {
       else await api.delete(`/communities/${community.id}/leave`);
       setJoined(next);
       setMemberCount((c) => c + (next ? 1 : -1));
+    } catch {
+      toast.error(next ? "Couldn't join community" : "Couldn't leave community");
     } finally {
       setLoading(false);
     }

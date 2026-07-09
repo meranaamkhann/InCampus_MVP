@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Sun, Moon, Bell, LogOut } from "lucide-react";
+import { Search, Sun, Moon, Bell, LogOut, Menu } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
+import { MobileDrawer } from "@/components/layout/MobileDrawer";
 import { useTheme } from "@/lib/theme-provider";
 import { useAuthStore } from "@/lib/auth-store";
 import { useNotificationStore } from "@/lib/notification-store";
@@ -16,6 +17,7 @@ export function TopBar() {
   const { name, clearSession } = useAuthStore();
   const unread = useNotificationStore((s) => s.unreadCount);
   const [query, setQuery] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +30,16 @@ export function TopBar() {
   }
 
   return (
-    <header className="glass sticky top-0 z-30 flex items-center justify-between gap-4 px-6 py-3">
+    <header className="glass sticky top-0 z-30 flex items-center justify-between gap-3 px-4 py-3 md:gap-4 md:px-6">
+      <button
+        onClick={() => setDrawerOpen(true)}
+        className="rounded-xl p-2 text-ink-muted hover:bg-white/5 hover:text-ink md:hidden"
+        aria-label="Open menu"
+      >
+        <Menu size={20} />
+      </button>
+      <MobileDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
+
       <form onSubmit={handleSearch} className="relative w-full max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" size={16} />
         <Input
@@ -39,7 +50,7 @@ export function TopBar() {
         />
       </form>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 md:gap-3">
         <button
           onClick={toggleTheme}
           className="rounded-xl p-2 text-ink-muted hover:bg-white/5 hover:text-ink"

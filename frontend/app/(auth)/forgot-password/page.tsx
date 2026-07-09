@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { api, apiErrorMessage } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function ForgotPasswordPage() {
     try {
       await api.post("/auth/forgot-password", { email });
       router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+      toast.success("Code sent", "Check your college email for the reset code.");
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {

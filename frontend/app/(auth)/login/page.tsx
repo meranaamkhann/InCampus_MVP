@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth, apiErrorMessage } from "@/hooks/useAuth";
+import { toast } from "@/lib/toast-store";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -20,6 +21,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
+      toast.success("Welcome back!");
     } catch (err) {
       setError(apiErrorMessage(err, "Invalid email or password"));
     } finally {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
+import { MobileNav } from "@/components/layout/MobileNav";
 import { useAuthStore } from "@/lib/auth-store";
 import { useRealtimeSession } from "@/hooks/useRealtimeSession";
 
@@ -35,8 +36,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar />
       <div className="flex min-h-screen flex-1 flex-col">
         <TopBar />
-        <main className="flex-1 px-6 py-6">{children}</main>
+        <main className="flex-1 px-4 py-6 pb-24 md:px-6 md:pb-6">{children}</main>
       </div>
+      <MobileNav />
     </div>
   );
 }

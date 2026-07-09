@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { api, apiErrorMessage } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import { useAuthStore } from "@/lib/auth-store";
 import type { Post, PostType } from "@/types";
 
@@ -75,9 +76,12 @@ export function CreatePostComposer({ onCreated }: { onCreated: (post: Post) => v
 
       const res = await api.post<{ data: Post }>("/posts", payload);
       onCreated(res.data.data);
+      toast.success("Posted!", "Your post is now live on the campus feed.");
       reset();
     } catch (err) {
-      setError(apiErrorMessage(err, "Couldn't publish your post"));
+      const message = apiErrorMessage(err, "Couldn't publish your post");
+      setError(message);
+      toast.error("Couldn't post", message);
     } finally {
       setLoading(false);
     }

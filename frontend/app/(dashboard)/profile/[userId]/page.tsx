@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MessageCircle, UserPlus, UserCheck, ShieldCheck } from "lucide-react";
+import { MessageCircle, UserPlus, UserCheck, ShieldCheck, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { PostCard } from "@/components/feed/PostCard";
 import { usePaginated } from "@/hooks/usePaginated";
-import { api } from "@/lib/api";
+import { api, apiErrorMessage } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import { useAuthStore } from "@/lib/auth-store";
 import type { ApiResponse, Post, UserProfile } from "@/types";
 
@@ -18,25 +21,57 @@ export default function ProfilePage() {
   const router = useRouter();
   const currentUserId = useAuthStore((s) => s.userId);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [following, setFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const isOwnProfile = params.userId === currentUserId;
 
-  const { items: posts } = usePaginated<Post>(`/posts/user/${params.userId}`, 10, [params.userId]);
+  const { items: posts, loading: postsLoading } = usePaginated<Post>(`/posts/user/${params.userId}`, 10, [params.userId]);
 
-  useEffect(() => {
-    api.get<ApiResponse<UserProfile>>(`/users/${params.userId}`).then((res) => setProfile(res.data.data));
-  }, [params.userId]);
+  function loadProfile() {
+    setLoadError(false);
+    setProfile(null);
+    api
+      .get<ApiResponse<UserProfile>>(`/users/${params.userId}`)
+      .then((res) => {
+        setProfile(res.data.data);
+        setFollowing(res.data.data.followedByCurrentUser);
+      })
+      .catch(() => setLoadError(true));
+  }
+
+  useEffect(loadProfile, [params.userId]);
 
   async function toggleFollow() {
     const next = !following;
     setFollowing(next);
-    if (next) await api.post(`/users/${params.userId}/follow`);
-    else await api.delete(`/users/${params.userId}/follow`);
+    setFollowLoading(true);
+    try {
+      if (next) await api.post(`/users/${params.userId}/follow`);
+      else await api.delete(`/users/${params.userId}/follow`);
+    } catch (err) {
+      setFollowing(!next);
+      toast.error("Couldn't update follow status", apiErrorMessage(err));
+    } finally {
+      setFollowLoading(false);
+    }
   }
 
   async function messageUser() {
-    const res = await api.get<ApiResponse<string>>(`/chat/rooms/with/${params.userId}`);
-    router.push(`/messages?room=${res.data.data}`);
+    try {
+      const res = await api.get<ApiResponse<string>>(`/chat/rooms/with/${params.userId}`);
+      router.push(`/messages?room=${res.data.data}`);
+    } catch (err) {
+      toast.error("Couldn't start conversation", apiErrorMessage(err));
+    }
+  }
+
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-3xl">
+        <ErrorState onRetry={loadProfile} title="Couldn't load this profile" />
+      </div>
+    );
   }
 
   if (!profile) {
@@ -46,7 +81,7 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-3xl">
       <Card className="p-6">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-4">
             <Avatar name={profile.name} src={profile.profilePictureUrl} size={72} />
             <div>
@@ -70,7 +105,12 @@ export default function ProfilePage() {
 
           {!isOwnProfile && (
             <div className="flex gap-2">
-              <Button size="sm" variant={following ? "outline" : "primary"} onClick={toggleFollow}>
+              <Button
+                size="sm"
+                variant={following ? "outline" : "primary"}
+                onClick={toggleFollow}
+                disabled={followLoading}
+              >
                 {following ? <UserCheck size={15} className="mr-1" /> : <UserPlus size={15} className="mr-1" />}
                 {following ? "Following" : "Follow"}
               </Button>
@@ -111,7 +151,9 @@ export default function ProfilePage() {
         {posts.map((post) => (
           <PostCard key={post.id} post={post} />
         ))}
-        {posts.length === 0 && <p className="text-sm text-ink-muted">No posts yet.</p>}
+        {!postsLoading && posts.length === 0 && (
+          <EmptyState icon={FileText} title="No posts yet" description={isOwnProfile ? "Share something with your campus." : "Nothing posted here yet."} />
+        )}
       </div>
     </div>
   );

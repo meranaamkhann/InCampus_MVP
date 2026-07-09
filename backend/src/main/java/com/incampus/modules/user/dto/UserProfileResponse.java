@@ -31,4 +31,5 @@ public class UserProfileResponse {
     private long followersCount;
     private long followingCount;
     private boolean banned;
+    private boolean followedByCurrentUser;
 }

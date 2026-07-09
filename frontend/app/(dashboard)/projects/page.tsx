@@ -9,8 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { CardSkeletonGrid } from "@/components/ui/skeleton";
 import { usePaginated } from "@/hooks/usePaginated";
 import { api, apiErrorMessage } from "@/lib/api";
+import { toast } from "@/lib/toast-store";
 import type { ProjectCardDto } from "@/types";
 
 function ProjectCard({ project }: { project: ProjectCardDto }) {
@@ -25,6 +29,9 @@ function ProjectCard({ project }: { project: ProjectCardDto }) {
       await api.post(`/projects/${project.id}/join-requests`, { message });
       setRequested(true);
       setOpen(false);
+      toast.success("Request sent", `The team behind "${project.title}" will review your request.`);
+    } catch (err) {
+      toast.error("Couldn't send request", apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -74,17 +81,17 @@ function ProjectCard({ project }: { project: ProjectCardDto }) {
 }
 
 export default function ProjectsPage() {
-  const { items, setItems, loading, hasMore, sentinelRef } = usePaginated<ProjectCardDto>("/projects");
+  const { items, setItems, loading, error, hasMore, sentinelRef, retry } = usePaginated<ProjectCardDto>("/projects");
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [roles, setRoles] = useState<string[]>([""]);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleCreate() {
     setSubmitting(true);
-    setError(null);
+    setFormError(null);
     try {
       const res = await api.post<{ data: ProjectCardDto }>("/projects", {
         title,
@@ -92,12 +99,15 @@ export default function ProjectsPage() {
         rolesNeeded: roles.filter(Boolean),
       });
       setItems((prev) => [res.data.data, ...prev]);
+      toast.success("Project posted", `"${title}" is now visible to everyone on campus.`);
       setTitle("");
       setDescription("");
       setRoles([""]);
       setOpen(false);
     } catch (err) {
-      setError(apiErrorMessage(err, "Couldn't create project"));
+      const message = apiErrorMessage(err, "Couldn't create project");
+      setFormError(message);
+      toast.error("Couldn't create project", message);
     } finally {
       setSubmitting(false);
     }
@@ -148,7 +158,7 @@ export default function ProjectsPage() {
                   </button>
                 </div>
               </div>
-              {error && <p className="text-sm text-danger">{error}</p>}
+              {formError && <p className="text-sm text-danger">{formError}</p>}
               <Button className="w-full" onClick={handleCreate} disabled={submitting || !title.trim()}>
                 {submitting ? "Posting…" : "Post project"}
               </Button>
@@ -157,13 +167,27 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        {items.map((p) => (
-          <ProjectCard key={p.id} project={p} />
-        ))}
-      </div>
+      {loading && <CardSkeletonGrid count={2} className="mt-6 sm:grid-cols-2 lg:grid-cols-2" />}
 
-      {loading && <p className="mt-6 text-center text-sm text-ink-muted">Loading…</p>}
+      {error && items.length === 0 && !loading && <ErrorState className="mt-6" onRetry={retry} />}
+
+      {!loading && !error && items.length === 0 && (
+        <EmptyState
+          icon={Rocket}
+          title="No project teams yet"
+          description="Post a hackathon team or side project and list the roles you need filled."
+          className="mt-6"
+        />
+      )}
+
+      {items.length > 0 && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {items.map((p) => (
+            <ProjectCard key={p.id} project={p} />
+          ))}
+        </div>
+      )}
+
       {hasMore && <div ref={sentinelRef} className="h-4" />}
     </div>
   );

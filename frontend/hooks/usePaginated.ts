@@ -67,5 +67,5 @@ export function usePaginated<T>(endpoint: string, size = 15, deps: unknown[] = [
     [loadMore]
   );
 
-  return { items, setItems, loading, error, hasMore, sentinelRef, reset };
+  return { items, setItems, loading, error, hasMore, sentinelRef, reset, retry: loadMore };
 }
