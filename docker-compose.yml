@@ -1,0 +1,96 @@
+version: "3.9"
+
+# One-command full-stack dev environment: Postgres, Redis, the Spring Boot
+# backend, the Next.js frontend, and Adminer for peeking at the DB.
+#
+#   cp .env.example .env      (fill in JWT_SECRET at minimum)
+#   docker compose up --build
+#
+# Frontend: http://localhost:3000
+# Backend:  http://localhost:8080  (Swagger UI at /swagger-ui.html)
+# Adminer:  http://localhost:8081
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: incampus-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: incampus
+      POSTGRES_USER: incampus
+      POSTGRES_PASSWORD: incampus
+    ports:
+      - "5432:5432"
+    volumes:
+      - incampus_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U incampus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: incampus-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    container_name: incampus-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: incampus
+      DB_USERNAME: incampus
+      DB_PASSWORD: incampus
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please-make-this-long-and-random}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    container_name: incampus-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      NEXT_PUBLIC_WS_URL: http://localhost:8080/ws
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+
+  adminer:
+    image: adminer
+    container_name: incampus-adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  incampus_pgdata:
